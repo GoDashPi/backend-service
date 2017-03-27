@@ -1,0 +1,93 @@
+frameworkVersion: ">=1.2.0 <2.0.0"
+
+service: upload-service
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  cfLogs: true
+  environment:
+    SERVERLESS_STAGE: ${opt:stage, self:provider.stage}
+    SERVERLESS_PROJECT: ${self:service}
+    SERVERLESS_REGION: ${opt:region, self:provider.region}
+    TABLE_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}
+    UPLOAD_BUCKET_NAME:
+      Ref: UploadBucket
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:*
+      Resource: arn:aws:dynamodb:${self:provider.environment.SERVERLESS_REGION}:*:*
+    - Effect: Allow
+      Action:
+      - SNS:*
+      Resource: arn:aws:sns:${self:provider.environment.SERVERLESS_REGION}:*:*
+    - Effect: Allow
+      Action:
+      - S3:PutObject
+      Resource: "*"
+
+package:
+  exclude:
+    - test/**
+    - .git/**
+
+functions:
+  get-upload-url:
+    handler: get-upload-url/index.handler
+    events:
+      - http:
+          path: upload-url/{key}
+          method: get
+          cors: true
+    timeout: 20
+
+plugins:
+  - serverless-mocha-plugin
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  serverless-mocha-plugin:
+    functionTemplate: templates/function.ejs
+  webpackIncludeModules: true
+
+resources:
+  Outputs:
+    UploadBucket:
+      Value:
+        Ref: UploadBucket
+  Resources:
+    UploadBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: Private
+        CorsConfiguration:
+          CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders:
+              - Date
+            Id: CorsRule1
+            MaxAge: '3600'
+      DeletionPolicy: Delete
+#  Resources:
+#    SessionsTable:
+#      Type: AWS::DynamoDB::Table
+#      DeletionPolicy: Delete
+#      Properties:
+#        AttributeDefinitions:
+#          - AttributeName: id
+#            AttributeType: S
+#        KeySchema:
+#          - AttributeName: id
+#            KeyType: HASH
+#        ProvisionedThroughput:
+#          ReadCapacityUnits: 1
+#          WriteCapacityUnits: 1
+#        TableName: ${self:provider.environment.TABLE_NAME}
