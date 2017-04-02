@@ -1,0 +1,18 @@
+version: '2'
+
+services:
+  renderer:
+    image: godashpi-renderer
+    build: docker
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} # for local testing
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} # for local testing
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} # for local testing
+      - UPLOAD_BUCKET=${UPLOAD_BUCKET}
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/data
+      - /tmp/renderer:/tmp
+    working_dir: /data
+    entrypoint: /data/scripts/entrypoint.sh
