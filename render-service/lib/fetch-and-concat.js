@@ -15,27 +15,28 @@ const readDir = BbPromise.promisify(fs.readdir);
 const writeFile = BbPromise.promisify(fs.writeFile);
 const remove = BbPromise.promisify(fs.remove);
 
+
 const fetchChunks = (sessionId) => {
   const sessionDirectory = path.join(config.recordingsDirectory, sessionId);
   return ensureDir(sessionDirectory)
-    .then(() => remove(path.join(sessionDirectory, 'output.h264')))
+    // .then(() => remove(path.join(sessionDirectory, 'output.h264')))
     .then(() => copyRecordings(sessionId, sessionDirectory))
     .then(() => createIndex(sessionDirectory))
-    .then(() => transcodeChunks(sessionDirectory));
+    .then(() => createImageSequence(sessionDirectory))
+    .then(() => createGifPreview(sessionDirectory))
+    .then(() => remove(path.join(sessionDirectory, 'frames')));
 };
 
-const copyRecordings = (sessionId, sessionDirectory) => new Promise((resolve, reject) => {
-  const aws = spawn('aws', (`s3 sync s3://${process.env.UPLOAD_BUCKET}/${sessionId} ${sessionDirectory}`).split(' '));
-  aws.stdout.on('data', (data) => {
+const spawnPromise = (spawnProcess) => new Promise((resolve, reject) => {
+  spawnProcess.stdout.on('data', (data) => {
     log(`stdout: ${data}`);
   });
 
-  aws.stderr.on('data', (data) => {
+  spawnProcess.stderr.on('data', (data) => {
     log(`stderr: ${data}`);
-    return reject(data);
   });
 
-  aws.on('close', (code) => {
+  spawnProcess.on('close', (code) => {
     log(`child process exited with code ${code}`);
     if (code === 0) {
       return resolve();
@@ -43,6 +44,9 @@ const copyRecordings = (sessionId, sessionDirectory) => new Promise((resolve, re
     return reject(code);
   });
 });
+
+const copyRecordings = (sessionId, sessionDirectory) =>
+  spawnPromise(spawn('aws',(`s3 sync s3://${process.env.UPLOAD_BUCKET}/${sessionId} ${sessionDirectory}`).split(' ')));
 
 const createIndex = (sessionDirectory) => readDir(sessionDirectory)
   .then((files) =>
@@ -54,27 +58,19 @@ const createIndex = (sessionDirectory) => readDir(sessionDirectory)
   .then((files) =>
     writeFile(path.join(sessionDirectory, 'index.txt'), files.join('\n'), 'utf8'));
 
-const transcodeChunks = (sessionDirectory) => new Promise((resolve, reject) => {
-  const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' '));
-  // const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v copy -c:a copy ${path.join(sessionDirectory, 'output.h264')}`).split(' '));
+const createImageSequence = (sessionDirectory) =>
+  ensureDir(path.join(sessionDirectory, 'frames'))
+    .then(() =>
+      spawnPromise(spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -vf scale=320:-1:flags=lanczos,fps=1/4 ${path.join(sessionDirectory, 'frames', 'ffout%06d.png')}`).split(' '))));
 
-  ffmpeg.stdout.on('data', (data) => {
-    log(`stdout: ${data}`);
-  });
+const createGifPreview = (sessionDirectory) =>
+  spawnPromise(spawn('ffmpeg', (`-i ${path.join(sessionDirectory, 'frames', 'ffout%06d.png')} -vf setpts=4*PTS ${path.join(sessionDirectory, `preview-${Date.now()}.gif`)}`).split(' ')));
 
-  ffmpeg.stderr.on('data', (data) => {
-    log(`stderr: ${data}`);
-    return reject(data);
-  });
+const transcodeChunks = (sessionDirectory) =>
+  spawnPromise(spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' ')));
 
-  ffmpeg.on('close', (code) => {
-    log(`child process exited with code ${code}`);
-    if (code === 0) {
-      return resolve();
-    }
-    return reject(code);
-  });
-});
+// const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' '));
+// const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v copy -c:a copy ${path.join(sessionDirectory, 'output.h264')}`).split(' '));
 
 const uploadToS3 = (sessionDirectory) =>
   s3.putObject({
