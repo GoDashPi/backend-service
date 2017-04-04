@@ -8,6 +8,10 @@ const { sessionExists } = require('../lib/session');
 const { fetchChunks } = require('../lib/fetch-and-concat');
 const { log, logError } = require('../lib/logger');
 
+app.get('/:sessionId', (req, res) => {
+  res.status(405).send('Use POST');
+});
+
 app.post('/:sessionId', (req, res) => {
   const { sessionId } = req.params;
   log('sessionId', sessionId);

@@ -55,8 +55,8 @@ const createIndex = (sessionDirectory) => readDir(sessionDirectory)
     writeFile(path.join(sessionDirectory, 'index.txt'), files.join('\n'), 'utf8'));
 
 const transcodeChunks = (sessionDirectory) => new Promise((resolve, reject) => {
-  // const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryslow -crf 28 -c:a copy ${path.join(sessionDirectory, 'output.mp4')}`).split(' '));
-  const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v copy -c:a copy ${path.join(sessionDirectory, 'output.h264')}`).split(' '));
+  const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' '));
+  // const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v copy -c:a copy ${path.join(sessionDirectory, 'output.h264')}`).split(' '));
 
   ffmpeg.stdout.on('data', (data) => {
     log(`stdout: ${data}`);
