@@ -1,6 +1,6 @@
 'use strict';
 
-const mod = require('../get-upload-url/index.js');
+const mod = require('../register-chunk/index.js');
 const mochaPlugin = require('serverless-mocha-plugin');
 
 const lambdaWrapper = mochaPlugin.lambdaWrapper;

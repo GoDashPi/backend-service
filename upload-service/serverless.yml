@@ -10,7 +10,7 @@ provider:
     SERVERLESS_STAGE: ${opt:stage, self:provider.stage}
     SERVERLESS_PROJECT: ${self:service}
     SERVERLESS_REGION: ${opt:region, self:provider.region}
-    TABLE_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}
+    CHUNKS_TABLE_NAME: godashpi-${self:provider.environment.SERVERLESS_STAGE}-chunks-table
     UPLOAD_BUCKET_NAME:
       Ref: UploadBucket
   iamRoleStatements:
@@ -33,12 +33,12 @@ package:
     - .git/**
 
 functions:
-  get-upload-url:
-    handler: get-upload-url/index.handler
+  register-chunk:
+    handler: register-chunk/index.handler
     events:
       - http:
-          path: upload-url/{key}
-          method: get
+          path: register-chunk
+          method: post
           cors: true
     timeout: 20
 
@@ -76,18 +76,21 @@ resources:
             Id: CorsRule1
             MaxAge: '3600'
       DeletionPolicy: Delete
-#  Resources:
-#    SessionsTable:
-#      Type: AWS::DynamoDB::Table
-#      DeletionPolicy: Delete
-#      Properties:
-#        AttributeDefinitions:
-#          - AttributeName: id
-#            AttributeType: S
-#        KeySchema:
-#          - AttributeName: id
-#            KeyType: HASH
-#        ProvisionedThroughput:
-#          ReadCapacityUnits: 1
-#          WriteCapacityUnits: 1
-#        TableName: ${self:provider.environment.TABLE_NAME}
+    ChunksTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: session
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: session
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.CHUNKS_TABLE_NAME}
