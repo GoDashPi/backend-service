@@ -64,7 +64,7 @@ const createImageSequence = (sessionDirectory) =>
       spawnPromise(spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -vf scale=320:-1:flags=lanczos,fps=1/4 ${path.join(sessionDirectory, 'frames', 'ffout%06d.png')}`).split(' '))));
 
 const createGifPreview = (sessionDirectory) =>
-  spawnPromise(spawn('ffmpeg', (`-i ${path.join(sessionDirectory, 'frames', 'ffout%06d.png')} -vf setpts=4*PTS ${path.join(sessionDirectory, `preview-${Date.now()}.gif`)}`).split(' ')));
+  spawnPromise(spawn('ffmpeg', (`-i ${path.join(sessionDirectory, 'frames', 'ffout%06d.png')} -vf setpts=4*PTS ${path.join(sessionDirectory, `preview.gif`)}`).split(' ')));
 
 const transcodeChunks = (sessionDirectory) =>
   spawnPromise(spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' ')));
@@ -72,13 +72,18 @@ const transcodeChunks = (sessionDirectory) =>
 // const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v libx264 -preset veryfast -crf 28 -c:a copy ${path.join(sessionDirectory, `output-${Date.now()}.mp4`)}`).split(' '));
 // const ffmpeg = spawn('ffmpeg', (`-f concat -safe 0 -i ${path.join(sessionDirectory, 'index.txt')} -c:v copy -c:a copy ${path.join(sessionDirectory, 'output.h264')}`).split(' '));
 
-const uploadToS3 = (sessionDirectory) =>
-  s3.putObject({
+const uploadToS3 = ({sessionId, sessionDirectory}) =>
+{
+  const Key = `${sessionId}/preview.gif`;
+  const Body = fs.readFileSync(path.join(sessionDirectory, 'preview.gif'));
+  return s3.upload({
     Bucket: process.env.UPLOAD_BUCKET,
-    Key: 'output.h264',
-    ContentType: 'video/h264',
-    Body: fs.readFileSync(path.join(sessionDirectory, 'output.h264'))
+    Key,
+    ContentType: 'image/gif',
+    Body,
+    ContentLength: Body.length,
   });
+};
 
 module.exports = {
   fetchChunks,
