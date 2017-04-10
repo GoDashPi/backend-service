@@ -28,7 +28,7 @@ const putChunk = (data) => {
   const params =
     Object.assign(
       { TableName: process.env.CHUNKS_TABLE_NAME },
-      { Item: payload});
+      { Item: payload });
   return dynamodb.put(params).promise();
 };
 
@@ -51,8 +51,9 @@ module.exports.handler =
     const body = JSON.parse(event.body);
     const filename = body.key;
     const timestamp = (new Date(body.timestamp)).toJSON();
+    const time = body.time;
     const { session } = body;
-    return putChunk({ session, timestamp, filename })
+    return putChunk({ session, timestamp, filename, time })
       .then(() => getSignedUrl(filename))
       .then((url) =>
         callback(null, createResponse(null, { url })))
