@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.0",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-west-1",
+      "eventTime": "2017-07-06T08:06:28.887Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "AWS:AROAJONH4DYFCWSZANZQ6:upload"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "178.75.140.71"
+      },
+      "responseElements": {
+        "x-amz-request-id": "9BA24B43C3E0AF71",
+        "x-amz-id-2": "x59DXv9VBfLtbZYZABrkhfknSOqNODl5JqpNMh0ItfpT7pJDuaHxdOPZsn3uU9tMdXCNpXSm68M="
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "446b8918-e1a4-42b4-b0f1-0560d46dace2",
+        "bucket": {
+          "name": "uploadbucket",
+          "ownerIdentity": {
+            "principalId": "ABHOG5HKZSTOS"
+          },
+          "arn": "arn:aws:s3:::uploadbucket"
+        },
+        "object": {
+          "key": "7bb06f2b-a6f2-4850-a4d4-f6d467ea4c85/1499328386456.gps.json",
+          "size": 11404,
+          "eTag": "79956a10432fe2ae4afcd19fff4d5ec5",
+          "sequencer": "00595DEF84D8BE4132"
+        }
+      }
+    }
+  ]
+}

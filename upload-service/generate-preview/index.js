@@ -5,9 +5,13 @@ const spawn = require('child_process').spawn;
 const fs = require('fs-extra');
 const BbPromise = require('bluebird');
 const path = require('path');
-const moment = require('moment');
+// const moment = require('moment');
 
-const { spawnPromise, pad } = require('../shared');
+const {
+  spawnPromise,
+  pad,
+  AWSConfig,
+} = require('../shared');
 
 const writeFile = BbPromise.promisify(fs.writeFile);
 const ensureDir = BbPromise.promisify(fs.ensureDir);
@@ -15,38 +19,33 @@ const remove = BbPromise.promisify(fs.remove);
 
 let ffmpeg; // todo: better implementation
 
-const config = {
-  region: AWS.config.region || process.env.SERVERLESS_REGION || 'eu-west-1',
-};
+const s3 = new AWS.S3(AWSConfig);
 
-const s3 = new AWS.S3(config);
-
-const fetchFrames = (session, directory) => {
-  return ensureDir(directory)
-    .then(() =>s3.listObjects({
-      Bucket: process.env.UPLOAD_BUCKET_NAME,
+const fetchFrames = (session, directory) =>
+  ensureDir(directory)
+    .then(() => s3.listObjects({
+      Bucket: process.env.RENDER_BUCKET_NAME,
       Prefix: `${session}/frames`,
     }).promise())
     .then(({ Contents }) => Contents.map(({ Key }) => Key))
     .then(frames =>
       Promise.all(frames.map(frame => s3.getObject({
-        Bucket: process.env.UPLOAD_BUCKET_NAME,
+        Bucket: process.env.RENDER_BUCKET_NAME,
         Key: frame,
-      }).promise().then((data) => Object.assign({ Key: frame }, data)))))
-    .then(frames => {
+      }).promise().then(data => Object.assign({ Key: frame }, data)))))
+    .then((frames) => {
       frames.sort((a, b) => {
-        const aBase = parseInt(path.parse(a.Key).base);
-        const bBase = parseInt(path.parse(b.Key).base);
+        const aBase = parseInt(path.parse(a.Key).base, 10);
+        const bBase = parseInt(path.parse(b.Key).base, 10);
         return aBase - bBase;
       });
       return Promise.all(frames.map((frame, index) => {
         console.log(index, frame);
-        const { base } = path.parse(frame.Key);
+        // const { base } = path.parse(frame.Key);
         const filename = path.join(directory, `${pad(index, 5)}.png`);
         return writeFile(filename, frame.Body);
-      }))
+      }));
     });
-};
 
 const createGifPreview = (directory, session) =>
   spawnPromise(spawn(ffmpeg, (`-i ${path.join(directory, session, '%05d.png')} -vf setpts=4*PTS ${path.join(directory, `preview-${session}.gif`)}`).split(' ')));
@@ -61,10 +60,10 @@ module.exports.handler = (event, context, callback) => {
     .then(() => createGifPreview(directory, session))
     .then(() => remove(path.join(directory, session)))
     .then(() => s3.putObject({
-      Bucket: process.env.UPLOAD_BUCKET_NAME,
-      Key: `preview-${session}.gif`,
+      Bucket: process.env.RENDER_BUCKET_NAME,
+      Key: `${session}/preview.gif`,
       ContentType: 'image/gif',
-      Body: fs.readFileSync(path.join(directory, `preview-${session}.gif`))
+      Body: fs.readFileSync(path.join(directory, `preview-${session}.gif`)),
     }).promise())
     .then(data => callback(null, data))
     .catch(callback);

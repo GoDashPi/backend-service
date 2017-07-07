@@ -1,6 +1,8 @@
 'use strict';
 
-const spawnPromise = (spawnProcess) => new Promise((resolve, reject) => {
+const AWS = require('aws-sdk');
+
+const spawnPromise = spawnProcess => new Promise((resolve, reject) => {
   spawnProcess.stdout.on('data', (data) => {
     console.log(`stdout: ${data}`);
   });
@@ -20,11 +22,16 @@ const spawnPromise = (spawnProcess) => new Promise((resolve, reject) => {
 
 const pad = (number, size) => {
   let result = `${number}`;
-  while (result.length < size) result = '0' + result;
+  while (result.length < size) result = `0${result}`;
   return result;
-}
+};
+
+const AWSConfig = {
+  region: AWS.config.region || process.env.SERVERLESS_REGION || 'eu-west-1',
+};
 
 module.exports = {
   spawnPromise,
   pad,
+  AWSConfig,
 };
