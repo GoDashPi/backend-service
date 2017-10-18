@@ -17,6 +17,9 @@ const getFileType = (filePath) => {
     case '.json':
       fileType = 'application/json';
       break;
+    case '.h264':
+      fileType = 'video/h264';
+      break;
     default:
       fileType = 'video/mp4';
       break;

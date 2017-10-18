@@ -38,11 +38,14 @@ module.exports.handler = (event, context, callback) => {
         };
       });
       console.log(data);
-      const promises = data.map(coordinate => dynamodb.put({
-        TableName: process.env.COORDINATES_TABLE_NAME,
-        Item: coordinate,
-      }).promise());
-      return promises;
+      // const promises = data.map(coordinate => dynamodb.put({
+      //   TableName: process.env.COORDINATES_TABLE_NAME,
+      //   Item: coordinate,
+      // }).promise());
+      // return promises;
+
+      // dont save to dynamo while developing
+      return Promise.resolve('ok');
     })
     .then(promises => Promise.all(promises))
     .then(() => callback(null, 'ok'));
