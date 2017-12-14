@@ -12,12 +12,12 @@ provider:
     SERVERLESS_STAGE: ${opt:stage, self:provider.stage}
     SERVERLESS_PROJECT: ${self:service}
     SERVERLESS_REGION: ${opt:region, self:provider.region}
-    CHUNKS_TABLE_NAME: godashpi-${self:provider.environment.SERVERLESS_STAGE}-chunks-table
-    COORDINATES_TABLE_NAME: godashpi-${self:provider.environment.SERVERLESS_STAGE}-coordinates-table
-    UPLOAD_BUCKET_NAME: godashpi-${self:provider.environment.SERVERLESS_STAGE}-chunks-bucket
-    RENDER_BUCKET_NAME: godashpi-${self:provider.environment.SERVERLESS_STAGE}-render-bucket
+    CHUNKS_TABLE_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}-chunks-table
+    COORDINATES_TABLE_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}-coordinates-table
+    UPLOAD_BUCKET_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}-chunks
+    RENDER_BUCKET_NAME: ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}-render
   apiKeys:
-    - godashpi-${self:provider.environment.SERVERLESS_STAGE}
+    - ${self:provider.environment.SERVERLESS_PROJECT}-${self:provider.environment.SERVERLESS_STAGE}
   iamRoleStatements:
     - Effect: Allow
       Action:
